@@ -1,0 +1,62 @@
+name: ClaudeUsage
+options:
+  bundleIdPrefix: com.ekkasit
+  deploymentTarget:
+    macOS: "14.0"
+  createIntermediateGroups: true
+settings:
+  base:
+    DEVELOPMENT_TEAM: 282E2QE5KD
+    CODE_SIGN_STYLE: Automatic
+    SWIFT_VERSION: "5.0"
+    ENABLE_HARDENED_RUNTIME: NO
+    MARKETING_VERSION: "1.0"
+    CURRENT_PROJECT_VERSION: "1"
+targets:
+  ClaudeUsage:
+    type: application
+    platform: macOS
+    sources:
+      - App
+      - Shared
+    info:
+      path: App/Info.plist
+      properties:
+        CFBundleDisplayName: Claude Usage
+        LSUIElement: true
+        LSApplicationCategoryType: public.app-category.developer-tools
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.ekkasit.ClaudeUsage
+        PRODUCT_NAME: ClaudeUsage
+    dependencies:
+      - target: ClaudeUsageWidget
+        embed: true
+  ClaudeUsageWidget:
+    type: app-extension
+    platform: macOS
+    sources:
+      - Widget
+      - Shared
+    info:
+      path: Widget/Info.plist
+      properties:
+        CFBundleDisplayName: Claude Usage
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
+    entitlements:
+      path: Widget/ClaudeUsageWidget.entitlements
+      properties:
+        com.apple.security.app-sandbox: true
+        com.apple.security.temporary-exception.files.home-relative-path.read-only:
+          - /.claude/
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.ekkasit.ClaudeUsage.Widget
+schemes:
+  ClaudeUsage:
+    build:
+      targets:
+        ClaudeUsage: all
+    run:
+      config: Release

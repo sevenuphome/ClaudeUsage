@@ -1,0 +1,6 @@
+build/
+*.zip
+.DS_Store
+xcuserdata/
+*.xcuserstate
+ClaudeUsage.app/
