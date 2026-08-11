@@ -31,6 +31,7 @@ final class AppState: ObservableObject {
 
     private var timer: Timer?
     private var lastWidgetSignature = ""
+    private var backoffUntil: Date?
 
     init() {
         menuBucket = UserDefaults.standard.string(forKey: "menuBucket") ?? "five_hour"
@@ -64,12 +65,23 @@ final class AppState: ObservableObject {
             apply(cached.data, updated: cached.updated)
             return
         }
+        // Respect a rate-limit backoff window (manual refresh overrides it)
+        if !force, let until = backoffUntil, Date() < until {
+            if let cached = UsageCache.load() {
+                apply(cached.data, updated: cached.updated)
+            }
+            return
+        }
         do {
             let result = try await UsageFetcher.fetch()
             UsageCache.write(raw: result.raw)
             apply(result.typed, updated: Date())
             errorText = nil
+            backoffUntil = nil
         } catch {
+            if case FetchError.rateLimited = error {
+                backoffUntil = Date().addingTimeInterval(5 * 60)
+            }
             errorText = error.localizedDescription
             // Stale cache fallback — keep showing the last good value
             if let cached = UsageCache.load() {

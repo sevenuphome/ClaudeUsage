@@ -4,12 +4,14 @@ import Security
 enum FetchError: LocalizedError {
     case noToken
     case badResponse
+    case rateLimited
     case api(String)
 
     var errorDescription: String? {
         switch self {
         case .noToken: return "No OAuth token in Keychain"
         case .badResponse: return "Unreadable API response"
+        case .rateLimited: return "Usage API rate-limited — backing off"
         case .api(let msg): return msg
         }
     }
@@ -55,6 +57,10 @@ enum UsageFetcher {
             throw FetchError.badResponse
         }
         if let error = dict["error"] {
+            if let details = error as? [String: Any], let type = details["type"] as? String {
+                if type == "rate_limit_error" { throw FetchError.rateLimited }
+                throw FetchError.api((details["message"] as? String) ?? type)
+            }
             throw FetchError.api("API error: \(error)")
         }
         let typed = try UsageCache.decoder.decode(UsageData.self, from: data)
