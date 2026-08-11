@@ -3,15 +3,16 @@ options:
   bundleIdPrefix: com.ekkasit
   deploymentTarget:
     macOS: "14.0"
+    iOS: "17.0"
   createIntermediateGroups: true
 settings:
   base:
-    DEVELOPMENT_TEAM: 282E2QE5KD
+    DEVELOPMENT_TEAM: XLD4Q2XZ63
     CODE_SIGN_STYLE: Automatic
     SWIFT_VERSION: "5.0"
     ENABLE_HARDENED_RUNTIME: NO
-    MARKETING_VERSION: "1.0"
-    CURRENT_PROJECT_VERSION: "1"
+    MARKETING_VERSION: "1.1"
+    CURRENT_PROJECT_VERSION: "2"
 targets:
   ClaudeUsage:
     type: application
@@ -25,6 +26,13 @@ targets:
         CFBundleDisplayName: Claude Usage
         LSUIElement: true
         LSApplicationCategoryType: public.app-category.developer-tools
+    entitlements:
+      path: App/ClaudeUsage.entitlements
+      properties:
+        com.apple.developer.icloud-container-identifiers:
+          - iCloud.com.ekkasit.ClaudeUsage
+        com.apple.developer.icloud-services:
+          - CloudKit
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.ekkasit.ClaudeUsage
@@ -53,10 +61,65 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.ekkasit.ClaudeUsage.Widget
+  ClaudeUsageiOS:
+    type: application
+    platform: iOS
+    sources:
+      - iOS/App
+      - Shared
+    info:
+      path: iOS/App/Info.plist
+      properties:
+        CFBundleDisplayName: Claude Usage
+        UILaunchScreen: {}
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+    entitlements:
+      path: iOS/App/ClaudeUsageiOS.entitlements
+      properties:
+        com.apple.developer.icloud-container-identifiers:
+          - iCloud.com.ekkasit.ClaudeUsage
+        com.apple.developer.icloud-services:
+          - CloudKit
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.ekkasit.ClaudeUsageiOS
+        TARGETED_DEVICE_FAMILY: "1"
+    dependencies:
+      - target: ClaudeUsageiOSWidget
+        embed: true
+  ClaudeUsageiOSWidget:
+    type: app-extension
+    platform: iOS
+    sources:
+      - iOS/Widget
+      - Shared
+    info:
+      path: iOS/Widget/Info.plist
+      properties:
+        CFBundleDisplayName: Claude Usage
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.widgetkit-extension
+    entitlements:
+      path: iOS/Widget/ClaudeUsageiOSWidget.entitlements
+      properties:
+        com.apple.developer.icloud-container-identifiers:
+          - iCloud.com.ekkasit.ClaudeUsage
+        com.apple.developer.icloud-services:
+          - CloudKit
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.ekkasit.ClaudeUsageiOS.Widget
 schemes:
   ClaudeUsage:
     build:
       targets:
         ClaudeUsage: all
+    run:
+      config: Release
+  ClaudeUsageiOS:
+    build:
+      targets:
+        ClaudeUsageiOS: all
     run:
       config: Release

@@ -12,7 +12,7 @@ enum UsageCache {
         if let pw = getpwuid(getuid()), let dir = pw.pointee.pw_dir {
             return URL(fileURLWithPath: String(cString: dir))
         }
-        return FileManager.default.homeDirectoryForCurrentUser
+        return URL(fileURLWithPath: NSHomeDirectory())
     }
 
     static var fileURL: URL {

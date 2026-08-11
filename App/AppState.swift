@@ -7,6 +7,7 @@ final class AppState: ObservableObject {
     @Published var data: UsageData?
     @Published var updatedAt: Date?
     @Published var errorText: String?
+    @Published var cloudSyncedAt: Date?
 
     /// Which row drives the menu bar title (a UsageRow id, e.g. "five_hour", "model_Fable").
     @Published var menuBucket: String {
@@ -86,6 +87,23 @@ final class AppState: ObservableObject {
         if signature != lastWidgetSignature {
             lastWidgetSignature = signature
             WidgetCenter.shared.reloadAllTimelines()
+            publishToCloud()
+        }
+    }
+
+    /// Pushes the current cache payload to CloudKit so the iOS app/widget
+    /// can render it. Fire-and-forget; failures show in the popover.
+    private func publishToCloud() {
+        Task.detached(priority: .utility) {
+            guard let bytes = try? Data(contentsOf: UsageCache.fileURL),
+                  let obj = try? JSONSerialization.jsonObject(with: bytes) as? [String: Any],
+                  let raw = obj["data"] else { return }
+            do {
+                try await CloudUsage.publish(raw: raw)
+                await MainActor.run { self.cloudSyncedAt = Date() }
+            } catch {
+                await MainActor.run { self.errorText = "iCloud: \(error.localizedDescription)" }
+            }
         }
     }
 }

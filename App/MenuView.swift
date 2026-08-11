@@ -36,6 +36,12 @@ struct MenuView: View {
                     .lineLimit(2)
             }
 
+            if let synced = state.cloudSyncedAt {
+                (Text("iCloud synced ") + Text(synced, style: .relative) + Text(" ago"))
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+            }
+
             Divider()
 
             Picker("Menu bar shows", selection: $state.menuBucket) {

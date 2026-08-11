@@ -2,7 +2,7 @@ import WidgetKit
 import SwiftUI
 
 @main
-struct ClaudeUsageWidgets: WidgetBundle {
+struct ClaudeUsageiOSWidgets: WidgetBundle {
     var body: some Widget {
         UsageWidget()
     }
@@ -10,12 +10,12 @@ struct ClaudeUsageWidgets: WidgetBundle {
 
 struct UsageWidget: Widget {
     var body: some WidgetConfiguration {
-        StaticConfiguration(kind: "ClaudeUsage", provider: UsageProvider()) { entry in
+        StaticConfiguration(kind: "ClaudeUsageiOS", provider: UsageProvider()) { entry in
             UsageWidgetView(entry: entry)
         }
         .configurationDisplayName("Claude Usage")
-        .description("Claude Code rate-limit usage.")
-        .supportedFamilies([.systemSmall, .systemMedium])
+        .description("Claude Code rate-limit usage, synced from your Mac.")
+        .supportedFamilies([.systemSmall, .systemMedium, .accessoryCircular, .accessoryInline, .accessoryRectangular])
     }
 }
 
@@ -31,18 +31,23 @@ struct UsageProvider: TimelineProvider {
     func placeholder(in context: Context) -> UsageEntry { .sample }
 
     func getSnapshot(in context: Context, completion: @escaping (UsageEntry) -> Void) {
-        completion(context.isPreview ? .sample : current())
+        if context.isPreview {
+            completion(.sample)
+        } else {
+            Task { completion(await current()) }
+        }
     }
 
     func getTimeline(in context: Context, completion: @escaping (Timeline<UsageEntry>) -> Void) {
-        // The menu bar app pokes reloadAllTimelines() whenever values change;
-        // this schedule is just the fallback when the app isn't running.
-        completion(Timeline(entries: [current()], policy: .after(Date().addingTimeInterval(15 * 60))))
+        Task {
+            let entry = await current()
+            completion(Timeline(entries: [entry], policy: .after(Date().addingTimeInterval(15 * 60))))
+        }
     }
 
-    private func current() -> UsageEntry {
-        if let cached = UsageCache.load() {
-            return UsageEntry(date: Date(), rows: cached.data.rows, updated: cached.updated)
+    private func current() async -> UsageEntry {
+        if let fetched = try? await CloudUsage.fetch() {
+            return UsageEntry(date: Date(), rows: fetched.data.rows, updated: fetched.updated)
         }
         return UsageEntry(date: Date(), rows: [], updated: nil)
     }
@@ -66,11 +71,18 @@ struct UsageWidgetView: View {
 
     var body: some View {
         Group {
-            if entry.rows.isEmpty {
+            switch family {
+            case _ where entry.rows.isEmpty:
                 emptyView
-            } else if family == .systemSmall {
+            case .accessoryCircular:
+                circularView
+            case .accessoryInline:
+                inlineView
+            case .accessoryRectangular:
+                rectangularView
+            case .systemSmall:
                 smallView
-            } else {
+            default:
                 mediumView
             }
         }
@@ -87,23 +99,53 @@ struct UsageWidgetView: View {
 
     private var emptyView: some View {
         VStack(spacing: 4) {
-            Image(systemName: "gauge")
-                .font(.title2)
+            Image(systemName: "icloud")
+                .font(.title3)
                 .foregroundStyle(.secondary)
-            Text("No usage data")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-            Text("Run the Claude Usage app")
+            Text("Waiting for Mac")
                 .font(.caption2)
-                .foregroundStyle(.tertiary)
+                .foregroundStyle(.secondary)
         }
     }
 
+    // Lock screen ring
+    private var circularView: some View {
+        Gauge(value: min(100, primary?.percent ?? 0), in: 0...100) {
+            Text("CC")
+        } currentValueLabel: {
+            Text("\(Int((primary?.percent ?? 0).rounded()))")
+        }
+        .gaugeStyle(.accessoryCircular)
+    }
+
+    // Lock screen one-liner
+    private var inlineView: some View {
+        let pct = Int((primary?.percent ?? 0).rounded())
+        let reset = primary?.resetsAt.flatMap(compactReset) ?? ""
+        return Text("Claude \(pct)% · \(reset)")
+    }
+
+    private var rectangularView: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            ForEach(entry.rows.prefix(3)) { row in
+                HStack(spacing: 4) {
+                    Text(shortName(row))
+                        .font(.caption2)
+                    Spacer()
+                    Text("\(Int(row.percent.rounded()))%")
+                        .font(.caption2.weight(.semibold))
+                        .monospacedDigit()
+                }
+            }
+        }
+    }
+
+    // StandBy hero — big ring, high contrast
     private var smallView: some View {
         VStack(spacing: 6) {
             if let row = primary {
                 ZStack {
-                    UsageRing(percent: row.percent)
+                    UsageRing(percent: row.percent, lineWidth: 9)
                     VStack(spacing: 0) {
                         Text("\(Int(row.percent.rounded()))%")
                             .font(.title2.weight(.bold))
@@ -113,7 +155,7 @@ struct UsageWidgetView: View {
                             .foregroundStyle(.secondary)
                     }
                 }
-                .frame(width: 72, height: 72)
+                .frame(width: 76, height: 76)
 
                 if let resetsAt = row.resetsAt {
                     (Text("resets ") + Text(resetsAt, style: .relative))
@@ -149,20 +191,20 @@ struct UsageWidgetView: View {
                 HStack(spacing: 8) {
                     Text(row.name)
                         .font(.caption)
-                        .frame(width: 78, alignment: .leading)
+                        .frame(width: 82, alignment: .leading)
                         .lineLimit(1)
                     UsageBar(percent: row.percent)
                         .frame(height: 5)
                     Text("\(Int(row.percent.rounded()))%")
                         .font(.caption.weight(.semibold))
                         .monospacedDigit()
-                        .frame(width: 34, alignment: .trailing)
+                        .frame(width: 36, alignment: .trailing)
                     if let resetsAt = row.resetsAt, let reset = compactReset(resetsAt) {
                         Text(reset)
                             .font(.caption2)
                             .foregroundStyle(.secondary)
                             .monospacedDigit()
-                            .frame(width: 44, alignment: .trailing)
+                            .frame(width: 46, alignment: .trailing)
                     }
                 }
             }
@@ -170,6 +212,8 @@ struct UsageWidgetView: View {
     }
 
     private func shortName(_ row: UsageRow) -> String {
-        row.name.replacingOccurrences(of: "7-day ", with: "").replacingOccurrences(of: "7-day", with: "7d")
+        row.name
+            .replacingOccurrences(of: "7-day ", with: "")
+            .replacingOccurrences(of: "7-day", with: "7d")
     }
 }
