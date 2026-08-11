@@ -88,7 +88,17 @@ final class AppState: ObservableObject {
             lastWidgetSignature = signature
             WidgetCenter.shared.reloadAllTimelines()
             publishToCloud()
+        } else if cloudSyncNeeded {
+            // Retry until the first publish lands (e.g. container still
+            // provisioning), and re-publish periodically so the iOS side's
+            // "updated" timestamp stays honest even when values are static.
+            publishToCloud()
         }
+    }
+
+    private var cloudSyncNeeded: Bool {
+        guard let synced = cloudSyncedAt else { return true }
+        return Date().timeIntervalSince(synced) > 30 * 60
     }
 
     /// Pushes the current cache payload to CloudKit so the iOS app/widget
@@ -100,8 +110,10 @@ final class AppState: ObservableObject {
                   let raw = obj["data"] else { return }
             do {
                 try await CloudUsage.publish(raw: raw)
+                NSLog("CloudUsage publish OK")
                 await MainActor.run { self.cloudSyncedAt = Date() }
             } catch {
+                NSLog("CloudUsage publish FAILED: \(error)")
                 await MainActor.run { self.errorText = "iCloud: \(error.localizedDescription)" }
             }
         }

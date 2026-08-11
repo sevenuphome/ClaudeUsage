@@ -33,6 +33,7 @@ targets:
           - iCloud.com.ekkasit.ClaudeUsage
         com.apple.developer.icloud-services:
           - CloudKit
+        com.apple.developer.icloud-container-environment: Development
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.ekkasit.ClaudeUsage
@@ -81,6 +82,7 @@ targets:
           - iCloud.com.ekkasit.ClaudeUsage
         com.apple.developer.icloud-services:
           - CloudKit
+        com.apple.developer.icloud-container-environment: Development
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.ekkasit.ClaudeUsageiOS
@@ -107,6 +109,7 @@ targets:
           - iCloud.com.ekkasit.ClaudeUsage
         com.apple.developer.icloud-services:
           - CloudKit
+        com.apple.developer.icloud-container-environment: Development
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.ekkasit.ClaudeUsageiOS.Widget
