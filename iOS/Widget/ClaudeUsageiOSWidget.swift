@@ -131,10 +131,17 @@ struct UsageWidgetView: View {
                 HStack(spacing: 4) {
                     Text(shortName(row))
                         .font(.caption2)
-                    Spacer()
+                    Spacer(minLength: 2)
                     Text("\(Int(row.percent.rounded()))%")
                         .font(.caption2.weight(.semibold))
                         .monospacedDigit()
+                    if let resetsAt = row.resetsAt, let reset = compactReset(resetsAt) {
+                        Text(reset)
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                            .monospacedDigit()
+                            .frame(width: 40, alignment: .trailing)
+                    }
                 }
             }
         }
@@ -215,5 +222,6 @@ struct UsageWidgetView: View {
         row.name
             .replacingOccurrences(of: "7-day ", with: "")
             .replacingOccurrences(of: "7-day", with: "7d")
+            .replacingOccurrences(of: "5-hour", with: "5h")
     }
 }
