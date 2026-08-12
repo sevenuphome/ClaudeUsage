@@ -52,11 +52,7 @@ final class AppState: ObservableObject {
         guard let data else { return "…" }
         let rows = data.rows
         guard let row = rows.first(where: { $0.id == menuBucket }) ?? rows.first else { return "–" }
-        var title = "\(Int(row.percent.rounded()))%"
-        if let resetsAt = row.resetsAt, let reset = compactReset(resetsAt) {
-            title += " \(reset)"
-        }
-        return title
+        return "\(Int(row.percent.rounded()))%"
     }
 
     func refresh(force: Bool = false) async {

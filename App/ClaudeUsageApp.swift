@@ -8,7 +8,10 @@ struct ClaudeUsageApp: App {
         MenuBarExtra {
             MenuView(state: state)
         } label: {
-            Text(state.title)
+            HStack(spacing: 3) {
+                Image(systemName: "asterisk")
+                Text(state.title)
+            }
         }
         .menuBarExtraStyle(.window)
     }
