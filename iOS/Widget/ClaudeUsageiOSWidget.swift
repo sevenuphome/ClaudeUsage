@@ -46,6 +46,11 @@ struct UsageProvider: TimelineProvider {
     }
 
     private func current() async -> UsageEntry {
+        // Signed in on this phone → fetch directly, no Mac required
+        if ClaudeOAuth.isSignedIn, let data = try? await UsageAPI.fetchWithOwnToken() {
+            return UsageEntry(date: Date(), rows: data.rows, updated: Date())
+        }
+        // Fallback: the Mac-published iCloud record
         if let fetched = try? await CloudUsage.fetch() {
             return UsageEntry(date: Date(), rows: fetched.data.rows, updated: fetched.updated)
         }
