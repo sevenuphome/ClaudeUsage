@@ -29,9 +29,32 @@ final class AppState: ObservableObject {
         }
     }
 
+    @Published var signedIn = ClaudeAuth.isSignedIn
+    @Published var signingIn = false
+
     private var timer: Timer?
     private var lastWidgetSignature = ""
     private var backoffUntil: Date?
+
+    func signIn() {
+        signingIn = true
+        Task { @MainActor in
+            defer { signingIn = false }
+            do {
+                try await ClaudeAuth.signIn()
+                signedIn = true
+                errorText = nil
+                await refresh(force: true)
+            } catch {
+                errorText = error.localizedDescription
+            }
+        }
+    }
+
+    func signOut() {
+        ClaudeAuth.signOut()
+        signedIn = false
+    }
 
     init() {
         menuBucket = UserDefaults.standard.string(forKey: "menuBucket") ?? "five_hour"

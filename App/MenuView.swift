@@ -55,6 +55,27 @@ struct MenuView: View {
             Toggle("Launch at login", isOn: $state.launchAtLogin)
                 .font(.callout)
 
+            if state.signedIn {
+                HStack {
+                    Label("Signed in with Claude", systemImage: "checkmark.seal.fill")
+                        .font(.caption)
+                        .foregroundStyle(.green)
+                    Spacer()
+                    Button("Sign out") { state.signOut() }
+                        .font(.caption)
+                }
+            } else {
+                VStack(alignment: .leading, spacing: 2) {
+                    Button(state.signingIn ? "Waiting for browser…" : "Sign in with Claude…") {
+                        state.signIn()
+                    }
+                    .disabled(state.signingIn)
+                    Text("Gets its own token — stops the keychain password prompts")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
+            }
+
             HStack {
                 Button("Refresh now") {
                     Task { await state.refresh(force: true) }
